@@ -6,9 +6,7 @@
 
 #include "config.h"
 
-#if USE_FREEMEM
 #include <MemoryFree.h>
-#endif
 
 
 #if DEBUG
@@ -39,11 +37,10 @@ void publish_uptime()
   prog_buffer[0] = '\0';
   strcpy_P(prog_buffer, (char*)pgm_read_word(&(STATUS_TOPICS[1])));
   char_buffer[0] = '\0';
-  itoa(millis(), char_buffer, 10);
+  ltoa(millis(), char_buffer, 10);
   mqtt_client.publish(prog_buffer, char_buffer);
 
 }
-#if USE_FREEMEM
 void publish_memory()
 {
   prog_buffer[0] = '\0';
@@ -52,7 +49,7 @@ void publish_memory()
   itoa(freeMemory(), char_buffer, 10);
   mqtt_client.publish(prog_buffer, char_buffer);
 }
-#endif
+
 
 void callback(char* topic, uint8_t* payload, unsigned int payload_length)
 {
