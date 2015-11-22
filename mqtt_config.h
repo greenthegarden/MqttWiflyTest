@@ -10,6 +10,7 @@ const int MQTT_PORT               = 1883;
 #define MQTT_MAX_PACKET_SIZE        168
 #define MQTT_KEEPALIVE              300
 
+unsigned long lastReconnectAttempt = 0;
 
 const char WIFLY_STATUS[]      PROGMEM = "relayduino/status/wifly";
 const char UPTIME_STATUS[]     PROGMEM = "relayduino/status/uptime";

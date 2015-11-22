@@ -21,9 +21,7 @@ void debug(const __FlashStringHelper * console_text)
 // including relay.h
 void callback(char* topic, uint8_t* payload, unsigned int length);
 
-
 PubSubClient   mqtt_client(mqtt_server_addr, MQTT_PORT, callback, wifly_client);
-
 
 void publish_connected()
 {
@@ -49,7 +47,6 @@ void publish_memory()
   itoa(freeMemory(), char_buffer, 10);
   mqtt_client.publish(prog_buffer, char_buffer);
 }
-
 
 void callback(char* topic, uint8_t* payload, unsigned int payload_length)
 {
@@ -141,7 +138,7 @@ void wifly_connect()
   }
 }
 
-void mqtt_connect()
+boolean mqtt_connect()
 {
   if (!wifly_connected)
     wifly_connect();
@@ -160,7 +157,6 @@ void mqtt_connect()
 #if USE_FREEMEM
       publish_memory();
 #endif
-
       // subscribe to topics
       mqtt_client.subscribe("relayduino/request/#");
     } else {
@@ -170,6 +166,7 @@ void mqtt_connect()
       delay(AFTER_ERROR_DELAY);
     }
   }
+  return mqtt_client.connected();
 }
 
 void reset_connection()
@@ -194,13 +191,15 @@ void setup()
 
   wifly_connect();
 
-#if USE_HARDWARE_WATCHDOG
-  ResetWatchdog1();
-#endif
-
 #if DEBUG
   Serial.println(WiFly.ip());
   //  Serial.println(WiFly.getMAC());
+#endif
+
+  lastReconnectAttempt = 0;
+
+#if USE_HARDWARE_WATCHDOG
+  ResetWatchdog1();
 #endif
 }
 
@@ -212,18 +211,33 @@ void setup()
 void loop()
 {
   // require a client.loop in order to receive subscriptions
-  //  mqttClient.loop();
-
-  //  if (!mqtt_client.loop()) {
-  //    mqtt_connect();
-  //  }
+//  mqttClient.loop();
+//
+//  if (!mqtt_client.loop()) {
+//    mqtt_connect();
+//   }
 
   // alternative based on code in relayr
-  if (mqtt_client.connected()) {
-    mqtt_client.loop();
+//  if (mqtt_client.connected()) {
+//    mqtt_client.loop();
+//  } else {
+//    //if connection lost, try to reconnect
+//    mqtt_connect();
+//  }
+
+  // alternative base on code in pubsubclient example mqtt_reconnect_nonblocking
+  if (!mqtt_client.connected()) {
+    unsigned long now = millis();
+    if (now - lastReconnectAttempt > 5000) {
+      lastReconnectAttempt = now;
+      // Attempt to reconnect
+      if (mqtt_connect()) {
+        lastReconnectAttempt = 0;
+      }
+    }
   } else {
-    //if connection lost, try to reconnect
-    mqtt_connect();
+    // Client connected
+    mqtt_client.loop();
   }
 
 #if USE_HARDWARE_WATCHDOG

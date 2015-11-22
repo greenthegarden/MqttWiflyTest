@@ -31,7 +31,7 @@ const int BAUD_RATE               = 9600;
 
 const char COMMAND_SEPARATOR      = ':';
 
-const byte BUFFER_SIZE            = 32;
+const byte BUFFER_SIZE            = 64;
 char char_buffer[BUFFER_SIZE];
 char prog_buffer[BUFFER_SIZE];
 char message[BUFFER_SIZE];

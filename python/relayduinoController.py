@@ -67,7 +67,7 @@ while True :
 		if command_type in command_types_valid_inputs :
 			if command_type is 't' :
 				mqttc.publish("relayduino/request/uptime");
-			if command_type is 'm' :
+			elif command_type is 'm' :
 				mqttc.publish("relayduino/request/memory");
 			else :
 				print("Should not be here!!")
