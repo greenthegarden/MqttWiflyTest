@@ -39,13 +39,13 @@
 const byte WIFLY_SERIAL_RX        = 11;
 const byte WIFLY_SERIAL_TX        = 12;
 
-SoftwareSerial wifly_serial(WIFLY_SERIAL_RX, WIFLY_SERIAL_TX);
+SoftwareSerial wiFlySerial(WIFLY_SERIAL_RX, WIFLY_SERIAL_TX);
 
 
 #include <SPI.h>
 #include <WiFly.h>
 
-WiFlyClient    wifly_client;
+WiFlyClient    wiFlyClient;
 
 
 boolean wifly_connected           = false;

@@ -8,10 +8,10 @@
 #if USE_HARDWARE_WATCHDOG
 
 const int RESET_WATCHDOG1         = 10;
-unsigned long previousMillis      = 0;              // will store last time LED was updated
+unsigned long previous_millis     = 0;              // will store last time LED was updated
 const long watchdog_interval      = 60UL * 1000UL;  // interval at which to blink (milliseconds)
 
-void ResetWatchdog1()
+void reset_watchdog_1()
 {
  pinMode(RESET_WATCHDOG1, OUTPUT);
  delay(200);

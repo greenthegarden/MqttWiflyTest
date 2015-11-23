@@ -3,14 +3,14 @@
 
 
 // MQTT parameters
-//byte mqtt_server_addr[]           = { 192, 168, 1, 55 };    // Pi
-byte mqtt_server_addr[]           = { 192, 168, 42, 1 };    // Pi
-char mqtt_client_id[]             = "robustness";
-const int MQTT_PORT               = 1883;
+//byte mqtt_server_addr[]          = { 192, 168, 1, 55 };    // Pi
+byte mqtt_server_address[]         = { 192, 168, 42, 1 };    // Pi
+char mqtt_client_id[]                = "robustness";
+const int MQTT_PORT                = 1883;
 #define MQTT_MAX_PACKET_SIZE        168
 #define MQTT_KEEPALIVE              300
 
-unsigned long lastReconnectAttempt = 0;
+unsigned long last_reconnect_attempt = 0;
 
 const char WIFLY_STATUS[]      PROGMEM = "relayduino/status/wifly";
 const char UPTIME_STATUS[]     PROGMEM = "relayduino/status/uptime";

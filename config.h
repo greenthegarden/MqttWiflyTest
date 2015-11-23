@@ -2,7 +2,7 @@
 #define MQTTWIFLYRELAYDUINO_CONFIG_H_
 
 
-#define DEBUG                       false
+#define DEBUG                       true
 
 
 // Macros

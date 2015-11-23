@@ -21,35 +21,33 @@ void debug(const __FlashStringHelper * console_text)
 // including relay.h
 void callback(char* topic, uint8_t* payload, unsigned int length);
 
-PubSubClient   mqtt_client(mqtt_server_addr, MQTT_PORT, callback, wifly_client);
+PubSubClient   mqttClient(mqtt_server_address, MQTT_PORT, callback, wiFlyClient);
 
 void publish_connected()
 {
   prog_buffer[0] = '\0';
   strcpy_P(prog_buffer, (char*)pgm_read_word(&(STATUS_TOPICS[0])));
-  mqtt_client.publish(prog_buffer, "connected");
+  mqttClient.publish(prog_buffer, "connected");
 }
 
-void publish_uptime()
-{
+void publish_uptime() {
   prog_buffer[0] = '\0';
   strcpy_P(prog_buffer, (char*)pgm_read_word(&(STATUS_TOPICS[1])));
   char_buffer[0] = '\0';
   ltoa(millis(), char_buffer, 10);
-  mqtt_client.publish(prog_buffer, char_buffer);
+  mqttClient.publish(prog_buffer, char_buffer);
 
 }
-void publish_memory()
-{
+
+void publish_memory() {
   prog_buffer[0] = '\0';
   strcpy_P(prog_buffer, (char*)pgm_read_word(&(STATUS_TOPICS[2])));
   char_buffer[0] = '\0';
   itoa(freeMemory(), char_buffer, 10);
-  mqtt_client.publish(prog_buffer, char_buffer);
+  mqttClient.publish(prog_buffer, char_buffer);
 }
 
-void callback(char* topic, uint8_t* payload, unsigned int payload_length)
-{
+void callback(char* topic, uint8_t* payload, unsigned int payload_length) {
   // handle message arrived
   /* topic = part of the variable header:has topic name of the topic where the publish received
    	  NOTE: variable header does not contain the 2 bytes with the
@@ -110,8 +108,8 @@ void callback(char* topic, uint8_t* payload, unsigned int payload_length)
   free(message);
 }
 
-void wifly_connect()
-{
+#if 0
+void wifly_connect() {
 #if DEBUG
   debug(F("initialising wifly"));
 #endif
@@ -125,31 +123,30 @@ void wifly_connect()
 
   //  if (!WiFly.join(MY_SSID, MY_PASSPHRASE, mode)) {
   if (!WiFly.join(MY_SSID)) {   // needs to be fixed to allow a passphrase if secure
-    wifly_connected = false;
+    wiflyConnected = false;
 #if DEBUG
     debug(F("  failed"));
 #endif
     delay(AFTER_ERROR_DELAY);
   } else {
-    wifly_connected = true;
+    wiflyConnected = true;
 #if DEBUG
     debug(F("  connected"));
 #endif
   }
 }
 
-boolean mqtt_connect()
-{
-  if (!wifly_connected)
+boolean mqtt_connect() {
+  if (!wiflyConnected)
     wifly_connect();
 
-  if (wifly_connected) {
+  if (wiflyConnected) {
     // MQTT client setup
     //    mqttClient.disconnect();
 #if DEBUG
     debug(F("connecting to broker"));
 #endif
-    if (mqtt_client.connect(mqtt_client_id)) {
+    if (mqttClient.connect(mqttClientId)) {
 #if DEBUG
       debug(F("  connected"));
 #endif
@@ -158,7 +155,7 @@ boolean mqtt_connect()
       publish_memory();
 #endif
       // subscribe to topics
-      mqtt_client.subscribe("relayduino/request/#");
+      mqttClient.subscribe("relayduino/request/#");
     } else {
 #if DEBUG
       debug(F("  failed"));
@@ -166,16 +163,70 @@ boolean mqtt_connect()
       delay(AFTER_ERROR_DELAY);
     }
   }
-  return mqtt_client.connected();
+  return mqttClient.connected();
 }
 
-void reset_connection()
-{
-  if (mqtt_client.connected())
-    mqtt_client.disconnect();
+void reset_connection() {
+  if (mqttClient.connected())
+    mqttClient.disconnect();
   wifly_connect();
   mqtt_connect();
 }
+#endif
+
+/*
+ * method to make sure we have a connection to the Wifi and MQTT server
+ * source: https://github.com/freakent/smart_star/blob/master/smart_star.ino
+ *
+ */
+
+unsigned long connect_alarm; // time of next connection check;
+
+void mqtt_connect() {
+    Serial.print("Reset any previous mqtt connection...");
+    //client.disconnect();
+    Serial.println("OK");
+    Serial.print("Connecting to MQTT Broker...");
+    if (mqttClient.connect(mqtt_client_id)) {
+      Serial.println("OK");
+      publish_connected();
+      mqttClient.subscribe("relayduino/request/#");
+    } else {
+      Serial.println("Failed");
+    }
+}
+
+void ensure_connected() {
+  connect_alarm = millis() + 30000UL;
+  
+  if (!mqttClient.connected()) {
+    
+ //   light_pattern(0); // turn lights off temporarily just in case this hangs
+    
+//    if (!wiFlyClient.connected()) {
+    if (!wifly_connected) {
+      Serial.print("Reset any previous Wifi connection...");
+      wiFlyClient.stop();
+      Serial.println("OK");
+  
+      Serial.print("Connecting to WiFi...");
+      WiFly.begin();
+  
+      // Join the WiFi network
+//      if (!WiFly.join(ssid, passphrase, mode)) {
+      if (!WiFly.join(MY_SSID)) {
+        Serial.println(" Failed");
+        wifly_connected = false;  
+        return;    } 
+  
+      wifly_connected = true;
+      Serial.println(" OK");
+    }
+
+    mqtt_connect();    
+  }
+}
+
 
 /*--------------------------------------------------------------------------------------
   setup()
@@ -186,17 +237,18 @@ void setup()
   // Configure WiFly
   Serial.begin(BAUD_RATE);
 
-  wifly_serial.begin(BAUD_RATE);
-  WiFly.setUart(&wifly_serial);
+  wiFlySerial.begin(BAUD_RATE);
+  WiFly.setUart(&wiFlySerial);
 
-  wifly_connect();
+//  wifly_connect();
+  ensure_connected();
 
 #if DEBUG
   Serial.println(WiFly.ip());
   //  Serial.println(WiFly.getMAC());
 #endif
 
-  lastReconnectAttempt = 0;
+  last_reconnect_attempt = 0;
 
 #if USE_HARDWARE_WATCHDOG
   ResetWatchdog1();
@@ -213,32 +265,43 @@ void loop()
   // require a client.loop in order to receive subscriptions
 //  mqttClient.loop();
 //
-//  if (!mqtt_client.loop()) {
+//  if (!mqttClient.loop()) {
 //    mqtt_connect();
 //   }
 
   // alternative based on code in relayr
-//  if (mqtt_client.connected()) {
-//    mqtt_client.loop();
+//  if (mqttClient.connected()) {
+//    mqttClient.loop();
 //  } else {
 //    //if connection lost, try to reconnect
 //    mqtt_connect();
 //  }
 
-  // alternative base on code in pubsubclient example mqtt_reconnect_nonblocking
-  if (!mqtt_client.connected()) {
+#if 0
+  // alternative based on code in pubsubclient example mqtt_reconnect_nonblocking
+  if (!mqttClient.connected()) {
     unsigned long now = millis();
-    if (now - lastReconnectAttempt > 5000) {
-      lastReconnectAttempt = now;
+    if (now - last_reconnect_attempt > 5000) {
+      last_reconnect_attempt = now;
       // Attempt to reconnect
-      if (mqtt_connect()) {
-        lastReconnectAttempt = 0;
+      if (mqttClient()) {
+        last_reconnect_attempt = 0;
       }
     }
   } else {
     // Client connected
-    mqtt_client.loop();
+    mqttClient.loop();
   }
+#endif
+
+  // alternative based on code at
+  // https://github.com/freakent/smart_star/blob/master/smart_star.ino
+  if (millis() > connect_alarm) {
+    ensure_connected(); 
+  }
+  
+  mqttClient.loop();
+
 
 #if USE_HARDWARE_WATCHDOG
   unsigned long currentMillis = millis();
